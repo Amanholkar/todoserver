@@ -13,7 +13,8 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
         const accessToken = user.generateAccessToken();
         const refreshToken = user.generateRefreshToken();
-
+        console.log(accessToken);
+        console.log(refreshToken);
         user.refreshToken = refreshToken;
 
         // await user.save({ validateBefore: false });
@@ -46,16 +47,20 @@ export const signup = asyncHandler(async  (req , res , next) =>{
         isEmailVerified: false,
         role: role || UserRolesEnum.USER,
     })
-
-    const {accessToken, refreshToken} = generateAccessAndRefreshTokens(user._id);
+    console.log(user._id)
+    const {accessToken, refreshToken} = await generateAccessAndRefreshTokens(user._id);
     user.refreshToken = refreshToken;
-    console.log(accessToken,refreshToken);
+
+    // get the user document ignoring the password and refreshToken field
+    const loggedInUser = await User.findById(user._id).select(
+        "-password -refreshToken -emailVerificationToken -emailVerificationExpiry"
+    );
     return res
         .status(201)
         .json(
             new ApiResponse(
                 200 ,
-                {user : user , accessToken , refreshToken},
+                {user: loggedInUser , accessToken , refreshToken},
                 "Users registered successfully and verification email has been sent on your email.",
             )
         )
